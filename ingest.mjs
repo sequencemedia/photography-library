@@ -72,7 +72,7 @@ function fromRecordItem (recordItem) {
  *  @param {IngestItemType} ingestItem
  *  @returns {Promise<IngestItemType & { update: { hash: string } }>}
  */
-async function renderIngestItemHash (filePath, { filter, update }) {
+async function renderIngestItem (filePath, { filter, update }) {
   const hash = await getFileHash(filePath)
 
   return {
@@ -85,6 +85,14 @@ async function renderIngestItemHash (filePath, { filter, update }) {
 }
 
 /**
+ *  @param {[string, IngestItemType]} ingestItem
+ *  @returns {Promise<IngestItemType & { update: { hash: string } }>}
+ */
+function mapIngestItem ([filePath, ingestItem]) {
+  return renderIngestItem(filePath, ingestItem)
+}
+
+/**
  *  @param {Map<string, IngestItemType>} alpha
  *  @param {number} batch
  */
@@ -94,7 +102,7 @@ async function execute (alpha, batch = alpha.size) {
     log(`Hashing ${total + 'MB'} ...`)
 
     const s = new Date()
-    const omega = await Promise.all(alpha.entries().map(([filePath, ingestItem]) => renderIngestItemHash(filePath, ingestItem)))
+    const omega = await Promise.all(alpha.entries().map(mapIngestItem))
     const e = new Date()
 
     log(batch, renderTiming(s, e))
@@ -124,13 +132,18 @@ export default async function ingest ({ from, pattern, to = from, batch = BATCH 
 
   info(pattern, batch)
 
-  for await (const filePath of glob(join(normalisePath(from), pattern), OPTIONS)) {
-    info(renderFilePath(filePath))
+  const FROM = normalisePath(from)
+  const TO = normalisePath(to)
 
+  for await (const filePath of glob(join(FROM, pattern), OPTIONS)) {
     const stats = await stat(filePath)
     if (stats.isFile()) {
+      info(renderFilePath(filePath))
+
+      const FILE_PATH = filePath.replace(FROM, TO)
+
       const recordItem = await LibraryModel.findOne({
-        filePath: filePath.replace(from, to)
+        filePath: FILE_PATH
       })
 
       if (!recordItem || (
@@ -139,28 +152,28 @@ export default async function ingest ({ from, pattern, to = from, batch = BATCH 
         recordItem.ctimeMs !== stats.ctimeMs)) {
         const {
           atime,
-          mtime,
-          ctime,
-          birthtime,
           atimeMs,
+          mtime,
           mtimeMs,
+          ctime,
           ctimeMs,
+          birthtime,
           birthtimeMs,
           size
         } = stats
 
         ingestItems.set(filePath, {
           filter: {
-            filePath: filePath.replace(from, to)
+            filePath: FILE_PATH
           },
           update: {
             atime,
-            mtime,
-            ctime,
-            birthtime,
             atimeMs,
+            mtime,
             mtimeMs,
+            ctime,
             ctimeMs,
+            birthtime,
             birthtimeMs,
             size
           }

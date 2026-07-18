@@ -19,7 +19,7 @@
     "lint": "eslint .",
     "lint:fix": "npm run lint -- --fix",
     "start": "DEBUG=@sequencemedia/photography-library* node .",
-    "start:archive": "DEBUG=@sequencemedia/photography-library* node library-archive.mjs",
+    "start:archive": "DEBUG=@sequencemedia/photography-library* node archive.mjs",
     "start:library:jpg": "DEBUG=@sequencemedia/photography-library* node library-jpg.mjs",
     "start:library:psd": "DEBUG=@sequencemedia/photography-library* node library-psd.mjs",
     "start:library:raw": "DEBUG=@sequencemedia/photography-library* node library-raw.mjs"
@@ -44,10 +44,10 @@
     "#types": "./types/index.d.mts"
   },
   "exports": {
+    "./archive": "./archive.mjs",
     "./library": "./library.mjs",
     "./library/jpg": "./library-jpg.mjs",
     "./library/psd": "./library-psd.mjs",
-    "./library/raw": "./library-raw.mjs",
-    "./archive": "./archive.mjs"
+    "./library/raw": "./library-raw.mjs"
   }
 }

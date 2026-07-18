@@ -3,8 +3,8 @@
 import 'dotenv/config'
 import debug from 'debug'
 import {
-  connnect,
-  disconnnect
+  connect,
+  disconnect
 } from '#common'
 import reportComplete from '#common/report-complete'
 import reportError from '#common/report-error'
@@ -16,7 +16,7 @@ const {
   env: {
     LIBRARY_FROM: FROM = '/',
     LIBRARY_TO: TO,
-    LIBRARY_MONGODB: MONGODB = 'mongodb://127.0.0.1:27017/match'
+    LIBRARY_MONGODB: MONGODB = 'mongodb://127.0.0.1:27017/photography-library'
   }
 } = process
 
@@ -26,8 +26,8 @@ const params = {
 }
 
 log('🚀', params)
-connnect(MONGODB)
+connect(MONGODB)
   .then(() => cleanUp(params))
   .then(reportComplete)
   .catch(reportError)
-  .finally(disconnnect)
+  .finally(disconnect)

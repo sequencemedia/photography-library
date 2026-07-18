@@ -76,7 +76,7 @@ export const ArchiveModel = mongoose.model('Archive', archiveSchema)
  * @param {string} [url]
  * @returns {Promise<mongoose.Mongoose | void>}
  */
-export async function connnect (url = 'mongodb://127.0.0.1:27017/match') {
+export async function connect (url = 'mongodb://127.0.0.1:27017/photography-library') {
   const {
     connection: {
       readyState = DISCONNECTED
@@ -91,7 +91,7 @@ export async function connnect (url = 'mongodb://127.0.0.1:27017/match') {
 /**
  * @returns {Promise<mongoose.Mongoose | void>}
  */
-export async function disconnnect () {
+export async function disconnect () {
   const {
     connection: {
       readyState = DISCONNECTED
@@ -183,12 +183,12 @@ export function getFileHashFromWorker (filePath) {
 }
 
 /**
- *  @param {number} itemsSize
+ *  @param {number} size
  *  @param {{ update: { size: number } }} item
  *  @returns {number}
  */
-export function reduceItemsSize (itemsSize, { update: { size = 0 } }) {
-  return itemsSize + size
+export function reduceItemsSize (size, { update }) {
+  return size + (update.size ?? 0)
 }
 
 /**

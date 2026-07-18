@@ -27,19 +27,14 @@ const info = debug('@sequencemedia/photography-library:clean-up:info')
  *  @returns {Promise<void>}
  */
 export default async function cleanUp ({ from, to = from }) {
-  /**
-   *  @type {RecordType[]}
-   */
-  const recordItems = await LibraryModel.find()
+  const cursor = LibraryModel.find().cursor()
 
-  while (recordItems.length) {
-    const recordItem = recordItems.shift()
+  for await (const recordItem of cursor) {
+    const {
+      filePath
+    } = recordItem
 
-    if (recordItem) {
-      const {
-        filePath
-      } = recordItem
-
+    if (filePath) {
       info(renderFilePath(filePath))
 
       try {
