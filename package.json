@@ -1,0 +1,53 @@
+{
+  "name": "@sequencemedia/photography-library",
+  "version": "0.0.0",
+  "main": "./library.mjs",
+  "type": "module",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=18.12.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sequencemedia/photography-library.git"
+  },
+  "homepage": "https://github.com/sequencemedia/photography-library#readme",
+  "bugs": {
+    "url": "https://github.com/sequencemedia/photography-library/issues"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "npm run lint -- --fix",
+    "start": "DEBUG=@sequencemedia/photography-library* node .",
+    "start:archive": "DEBUG=@sequencemedia/photography-library* node library-archive.mjs",
+    "start:library:jpg": "DEBUG=@sequencemedia/photography-library* node library-jpg.mjs",
+    "start:library:psd": "DEBUG=@sequencemedia/photography-library* node library-psd.mjs",
+    "start:library:raw": "DEBUG=@sequencemedia/photography-library* node library-raw.mjs"
+  },
+  "dependencies": {
+    "date-fns": "^4.4.0",
+    "debug": "^4.4.3",
+    "dotenv": "^17.4.2",
+    "mongoose": "^9.7.4"
+  },
+  "devDependencies": {
+    "@sequencemedia/eslint-config-standard": "^0.2.107",
+    "@sequencemedia/eslint-config-typescript": "^0.1.182",
+    "@types/debug": "^4.1.13",
+    "@types/node": "^26.1.1",
+    "eslint": "9.38.0",
+    "globals": "^17.7.0"
+  },
+  "imports": {
+    "#common": "./common/index.mjs",
+    "#common/*": "./common/*.mjs",
+    "#types": "./types/index.d.mts"
+  },
+  "exports": {
+    "./library": "./library.mjs",
+    "./library/jpg": "./library-jpg.mjs",
+    "./library/psd": "./library-psd.mjs",
+    "./library/raw": "./library-raw.mjs",
+    "./archive": "./archive.mjs"
+  }
+}
