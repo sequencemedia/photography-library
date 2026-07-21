@@ -1,11 +1,13 @@
 /**
  *  @typedef {import('node:fs').Stats} Stats
- *  @typedef {import('#types').IngestFilterType} IngestFilterType
- *  @typedef {import('#types').IngestUpdateType} IngestUpdateType
- *  @typedef {import('#types').IngestItemType} IngestItemType
  *  @typedef {import('#types').RecordFilterType} RecordFilterType
  *  @typedef {import('#types').RecordUpdateType} RecordUpdateType
- *  @typedef {import('#types').RecordItemType} RecordItemType
+ *  @typedef {import('#types').WriteItemType} WriteItemType
+ *  @typedef {{
+ *    filter: RecordFilterType
+ *    update: Omit<RecordUpdateType, 'hash'>
+ *  }} QueueItemType
+ *  @typedef {Map<string, QueueItemType>} IngestionQueueType
  */
 
 import debug from 'debug'
@@ -22,21 +24,21 @@ import {
   getFileHash,
   LibraryModel,
   round,
-  reduceItemsSize,
+  reduceSize,
   renderTiming,
   renderFilePath
 } from '#common'
-import reportError from '#common/report-error'
-
-const BATCH = 8
+import error from '#common/report/error'
 
 const log = debug('@sequencemedia/photography-library:ingest')
 const info = debug('@sequencemedia/photography-library:ingest:info')
 
+const BATCH = 8
+
 const OPTIONS = {
   /**
    * @param {string} fileName
-   * @returns
+   * @returns {boolean}
    */
   exclude (fileName) {
     return fileName === '@eaDir'
@@ -44,35 +46,26 @@ const OPTIONS = {
 }
 
 /**
- *  @param {IngestItemType & { update: { hash: string }}} ingestItem
- *  @returns {RecordItemType}
- */
-function toRecordItem ({ filter, update }) {
-  return {
-    filter,
-    update,
-    upsert: true
-  }
-}
-
-/**
- *  @param {RecordItemType} recordItem
+ *  @param {WriteItemType} writeItem
  *  @returns {{
- *    updateOne: RecordItemType
+ *    updateOne: WriteItemType & { upsert: true }
  *  }}
  */
-function fromRecordItem (recordItem) {
+function toBulkWriteItem (writeItem) {
   return {
-    updateOne: recordItem
+    updateOne: {
+      ...writeItem,
+      upsert: true
+    }
   }
 }
 
 /**
  *  @param {string} filePath
- *  @param {IngestItemType} ingestItem
- *  @returns {Promise<IngestItemType & { update: { hash: string } }>}
+ *  @param {QueueItemType} queueItem
+ *  @returns {Promise<WriteItemType>}
  */
-async function renderIngestItem (filePath, { filter, update }) {
+async function renderWriteItem (filePath, { filter, update }) {
   const hash = await getFileHash(filePath)
 
   return {
@@ -85,33 +78,32 @@ async function renderIngestItem (filePath, { filter, update }) {
 }
 
 /**
- *  @param {[string, IngestItemType]} ingestItem
- *  @returns {Promise<IngestItemType & { update: { hash: string } }>}
+ *  @param {[string, QueueItemType]} queueItem
+ *  @returns {Promise<WriteItemType>}
  */
-function mapIngestItem ([filePath, ingestItem]) {
-  return renderIngestItem(filePath, ingestItem)
+function toWriteItem ([filePath, queueItem]) {
+  return renderWriteItem(filePath, queueItem)
 }
 
 /**
- *  @param {Map<string, IngestItemType>} alpha
- *  @param {number} batch
+ *  @param {IngestionQueueType} alpha
  */
-async function execute (alpha, batch = alpha.size) {
+async function writeQueue (alpha) {
   try {
-    const total = round(alpha.values().reduce(reduceItemsSize, 0) / MB)
+    const total = round(alpha.values().reduce(reduceSize, 0) / MB)
     log(`Hashing ${total + 'MB'} ...`)
 
     const s = new Date()
-    const omega = await Promise.all(alpha.entries().map(mapIngestItem))
+    const omega = await Promise.all(alpha.entries().map(toWriteItem))
     const e = new Date()
 
-    log(batch, renderTiming(s, e))
+    log(alpha.size, renderTiming(s, e))
 
     log('Writing ...')
-    await LibraryModel.bulkWrite(omega.map(toRecordItem).map(fromRecordItem))
+    await LibraryModel.bulkWrite(omega.map(toBulkWriteItem))
     log('Written')
   } catch (e) {
-    reportError(e)
+    error(e)
   }
 }
 
@@ -124,16 +116,16 @@ async function execute (alpha, batch = alpha.size) {
  *  }} params
  *  @returns {Promise<void>}
  */
-export default async function ingest ({ from, pattern, to = from, batch = BATCH }) {
+export default async function ingest ({ from, to = from, pattern, batch = BATCH }) {
   /**
-   *  @type {Map<string, IngestItemType>}
+   *  @type {IngestionQueueType}
    */
-  const ingestItems = new Map()
-
-  info(pattern, batch)
+  const ingestionQueue = new Map()
 
   const FROM = normalisePath(from)
   const TO = normalisePath(to)
+
+  info(pattern, batch)
 
   for await (const filePath of glob(join(FROM, pattern), OPTIONS)) {
     const stats = await stat(filePath)
@@ -162,7 +154,7 @@ export default async function ingest ({ from, pattern, to = from, batch = BATCH 
           size
         } = stats
 
-        ingestItems.set(filePath, {
+        ingestionQueue.set(filePath, {
           filter: {
             filePath: FILE_PATH
           },
@@ -179,17 +171,17 @@ export default async function ingest ({ from, pattern, to = from, batch = BATCH 
           }
         })
 
-        if (ingestItems.size === batch) {
-          await execute(ingestItems, batch)
-          ingestItems.clear()
+        if (ingestionQueue.size === batch) {
+          await writeQueue(ingestionQueue)
+          ingestionQueue.clear()
         }
       }
     }
   }
 
-  if (ingestItems.size) {
-    await execute(ingestItems)
-    ingestItems.clear()
+  if (ingestionQueue.size) {
+    await writeQueue(ingestionQueue)
+    ingestionQueue.clear()
   }
 
   log('Done')

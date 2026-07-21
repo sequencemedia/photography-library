@@ -13,7 +13,7 @@ import {
   renderFilePath,
   renderTiming
 } from '#common'
-import reportError from '#common/report-error'
+import reportError from '#common/report/error'
 
 const log = debug('@sequencemedia/photography-library:worker')
 const info = debug('@sequencemedia/photography-library:worker:info')

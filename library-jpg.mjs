@@ -6,8 +6,8 @@ import {
   connect,
   disconnect
 } from '#common'
-import reportComplete from '#common/report-complete'
-import reportError from '#common/report-error'
+import complete from '#common/report/complete'
+import error from '#common/report/error'
 import ingest from './ingest.mjs'
 
 const log = debug('@sequencemedia/photography-library')
@@ -34,6 +34,6 @@ const params = {
 log('🚀', params)
 connect(MONGODB)
   .then(() => ingest(params))
-  .then(reportComplete)
-  .catch(reportError)
+  .then(complete)
+  .catch(error)
   .finally(disconnect)

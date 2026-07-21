@@ -16,7 +16,7 @@ import {
   differenceInSeconds,
   differenceInMinutes
 } from 'date-fns'
-import reportError from '#common/report-error'
+import error from '#common/report/error'
 
 const log = debug('@sequencemedia/photography-library:common')
 const info = debug('@sequencemedia/photography-library:common:info')
@@ -29,25 +29,6 @@ export const DISCONNECTING = 3
 export const KB = 1024
 export const MB = KB * 1000
 export const GB = MB * 1000
-
-const librarySchema = new mongoose.Schema({
-  filePath: { type: String, index: true, unique: true }, // unique
-  hash: { type: String, index: true },
-  atime: Date,
-  mtime: Date,
-  ctime: Date,
-  birthtime: Date,
-  atimeMs: Number,
-  mtimeMs: Number,
-  ctimeMs: Number,
-  birthtimeMs: Number,
-  size: Number
-},
-{
-  collection: 'Library',
-  versionKey: false,
-  timestamps: true
-})
 
 const archiveSchema = new mongoose.Schema({
   filePath: { type: String, index: true }, // not unique
@@ -68,9 +49,28 @@ const archiveSchema = new mongoose.Schema({
   timestamps: true
 })
 
-export const LibraryModel = mongoose.model('Library', librarySchema)
+const librarySchema = new mongoose.Schema({
+  filePath: { type: String, index: true, unique: true }, // unique
+  hash: { type: String, index: true },
+  atime: Date,
+  mtime: Date,
+  ctime: Date,
+  birthtime: Date,
+  atimeMs: Number,
+  mtimeMs: Number,
+  ctimeMs: Number,
+  birthtimeMs: Number,
+  size: Number
+},
+{
+  collection: 'Library',
+  versionKey: false,
+  timestamps: true
+})
 
 export const ArchiveModel = mongoose.model('Archive', archiveSchema)
+
+export const LibraryModel = mongoose.model('Library', librarySchema)
 
 /**
  * @param {string} [url]
@@ -133,7 +133,7 @@ export function getFileHash (filePath) {
       const s = new Date()
       createReadStream(filePath)
         .on('error', (e) => {
-          reportError(e)
+          error(e)
 
           reject(e)
         })
@@ -187,7 +187,7 @@ export function getFileHashFromWorker (filePath) {
  *  @param {{ update: { size: number } }} item
  *  @returns {number}
  */
-export function reduceItemsSize (size, { update }) {
+export function reduceSize (size, { update }) {
   return size + (update.size ?? 0)
 }
 

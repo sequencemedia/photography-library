@@ -6,8 +6,8 @@ import {
   connect,
   disconnect
 } from '#common'
-import reportComplete from '#common/report-complete'
-import reportError from '#common/report-error'
+import complete from '#common/report/complete'
+import error from '#common/report/error'
 import ingest from './ingest.mjs'
 import cleanUp from './clean-up.mjs'
 
@@ -36,6 +36,6 @@ log('🚀', params)
 connect(MONGODB)
   .then(() => ingest(params))
   .then(() => cleanUp(params))
-  .then(reportComplete)
-  .catch(reportError)
+  .then(complete)
+  .catch(error)
   .finally(disconnect)

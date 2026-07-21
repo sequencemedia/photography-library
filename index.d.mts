@@ -1,53 +1,27 @@
+import type { Stats } from 'node:fs'
 import type { ObjectId } from 'mongoose'
 
 declare global {
+  type FSStatsType = Pick<Stats, 'atime' | 'mtime' | 'ctime' | 'birthtime' | 'atimeMs' | 'mtimeMs' | 'ctimeMs' | 'birthtimeMs' | 'size'>
+
   namespace PhotographyLibraryTypes {
-    export interface IngestFilterType {
+    export interface RecordFilterType {
       filePath: string
     }
 
-    export interface IngestUpdateType {
-      atime: Date
-      mtime: Date
-      ctime: Date
-      birthtime: Date
-      atimeMs: number
-      mtimeMs: number
-      ctimeMs: number
-      birthtimeMs: number
-      size: number
-    }
-
-    export interface IngestItemType {
-      filter: IngestFilterType
-      update: IngestUpdateType
-    }
-
-    export interface RecordType {
-      id: ObjectId
-      filePath: string
-      atime: Date
-      mtime: Date
-      ctime: Date
-      birthtime: Date
-      atimeMs: number
-      mtimeMs: number
-      ctimeMs: number
-      birthtimeMs: number
-      size: number
+    export interface RecordUpdateType extends FSStatsType {
       hash: string
     }
 
-    export type RecordFilterType = IngestFilterType
-
-    export interface RecordUpdateType extends IngestUpdateType {
-      hash: string
-    }
-
-    export interface RecordItemType {
+    export interface WriteItemType {
       filter: RecordFilterType
       update: RecordUpdateType
-      upsert: boolean
+    }
+
+    export interface RecordType extends FSStatsType {
+      id: ObjectId
+      filePath: string
+      hash: string
     }
   }
 }
