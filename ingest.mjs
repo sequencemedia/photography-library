@@ -4,6 +4,9 @@
  *  @typedef {import('#types').RecordUpdateType} RecordUpdateType
  *  @typedef {import('#types').WriteItemType} WriteItemType
  *  @typedef {{
+ *    updateOne: WriteItemType & { upsert: true }
+ *  }} BulkWriteItemType
+ *  @typedef {{
  *    filter: RecordFilterType
  *    update: Omit<RecordUpdateType, 'hash'>
  *  }} QueueItemType
@@ -46,26 +49,11 @@ const OPTIONS = {
 }
 
 /**
- *  @param {WriteItemType} writeItem
- *  @returns {{
- *    updateOne: WriteItemType & { upsert: true }
- *  }}
- */
-function toBulkWriteItem (writeItem) {
-  return {
-    updateOne: {
-      ...writeItem,
-      upsert: true
-    }
-  }
-}
-
-/**
  *  @param {string} filePath
  *  @param {QueueItemType} queueItem
  *  @returns {Promise<WriteItemType>}
  */
-async function renderWriteItem (filePath, { filter, update }) {
+async function toWriteItem (filePath, { filter, update }) {
   const hash = await getFileHash(filePath)
 
   return {
@@ -78,11 +66,27 @@ async function renderWriteItem (filePath, { filter, update }) {
 }
 
 /**
- *  @param {[string, QueueItemType]} queueItem
- *  @returns {Promise<WriteItemType>}
+ *  @param {string} filePath
+ *  @param {QueueItemType} queueItem
+ *  @returns {Promise<BulkWriteItemType>}
  */
-function toWriteItem ([filePath, queueItem]) {
-  return renderWriteItem(filePath, queueItem)
+async function toBulkWriteItem (filePath, queueItem) {
+  const writeItem = await toWriteItem(filePath, queueItem)
+
+  return {
+    updateOne: {
+      ...writeItem,
+      upsert: true
+    }
+  }
+}
+
+/**
+ *  @param {[string, QueueItemType]} queueItem
+ *  @returns {Promise<BulkWriteItemType>}
+ */
+function fromEntry ([filePath, queueItem]) {
+  return toBulkWriteItem(filePath, queueItem)
 }
 
 /**
@@ -94,13 +98,13 @@ async function writeQueue (alpha) {
     log(`Hashing ${total + 'MB'} ...`)
 
     const s = new Date()
-    const omega = await Promise.all(alpha.entries().map(toWriteItem))
+    const omega = await Promise.all(alpha.entries().map(fromEntry))
     const e = new Date()
 
     log(alpha.size, renderTiming(s, e))
 
     log('Writing ...')
-    await LibraryModel.bulkWrite(omega.map(toBulkWriteItem))
+    await LibraryModel.bulkWrite(omega)
     log('Written')
   } catch (e) {
     error(e)
