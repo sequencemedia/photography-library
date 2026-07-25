@@ -28,7 +28,7 @@
     "date-fns": "^4.4.0",
     "debug": "^4.4.3",
     "dotenv": "^17.4.2",
-    "mongoose": "^9.7.4"
+    "mongoose": "^9.8.0"
   },
   "devDependencies": {
     "@sequencemedia/eslint-config-standard": "^0.2.107",
